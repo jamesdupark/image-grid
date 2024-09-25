@@ -5,6 +5,8 @@ import sys
 import argparse
 import math
 import re
+import tkinter as tk
+from tkinter import filedialog
 
 def calculate_grid(imgs: list) -> list[int]:
     total = len(imgs)
@@ -48,16 +50,7 @@ def combine_images(padding, images, basedir, grid_dims=None, rotation=180, stand
             x = 0
     canvas.save(basedir + 'image_grid.png')
 
-def main():
-    # parse args
-    parser = argparse.ArgumentParser(description="Formats images in given directory as a grid of images. Can provide grid size or size automatically.")
-    parser.add_argument("path", default="./")
-    parser.add_argument("-d", "--dimensions", nargs=2, type=int)
-    parser.add_argument("-r", "--rotation", type=int, default=180)
-    parser.add_argument("-ns", action="store_true")
-    args = parser.parse_args()
-    print(args)
-    
+def cli_config(args):
     # config
     if isdir(args.path):
         imgdir = args.path
@@ -73,9 +66,28 @@ def main():
                 ("Please ensure the target directory contains only tifs and that "
                  "filenames end in a number following an underscore or hyphen (i.e. KA331_1.tif)"))
         else: raise
+    return imgs, imgdir, args.dimensions, args.rotation, not args.ns
+
+def main():
+    # parse args
+    parser = argparse.ArgumentParser(description="Formats images in given directory as a grid of images. Can provide grid size or size automatically.")
+    parser.add_argument("path", nargs="?", default="./")
+    parser.add_argument("-g", "--graphical", action="store_true")
+    parser.add_argument("-d", "--dimensions", nargs=2, type=int)
+    parser.add_argument("-r", "--rotation", type=int, default=180)
+    parser.add_argument("-ns", action="store_true")
+    args = parser.parse_args()
+    print(args)
+
+    if args.graphical:
+        tk.Tk().withdraw()
+        imgdir = filedialog.askopenfilenames(title="Choose images!")
+        imgdir = filedialog.askdirectory(title="Choose image directory!")
+    else:
+        imgs, imgdir, dims, rotation, standardized = cli_config(args)
     
     # create grid
-    combine_images(50, imgs, imgdir, args.dimensions, args.rotation, not args.ns)
+    combine_images(50, imgs, imgdir, dims, rotation, standardized)
     print(f'Done with {imgdir}!')
 
     return 0
