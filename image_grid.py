@@ -74,9 +74,10 @@ def get_imgs(path):
 def cli_config(args):
     # config
     imgs = get_imgs(args.path)
-    rows, cols = args.dimensions
-    if rows * cols < len(imgs):
-        raise ValueError("given grid size too small!")
+    if args.dimensions:
+        rows, cols = args.dimensions
+        if rows * cols < len(imgs):
+            raise ValueError("given grid size too small!")
     return imgs, args.path, args.dimensions, args.rotation, not args.ns
 
 def main():
@@ -93,10 +94,10 @@ def main():
     # use GUI mode or proceed from CLI args
     if args.graphical:
         tk.Tk().withdraw()
-        imgdir = filedialog.askopenfilenames(title="Choose images!")
-        imgdir = filedialog.askdirectory(title="Choose image directory!")
-    else:
-        imgs, imgdir, dims, rotation, standardized = cli_config(args)
+        # imgdir = filedialog.askopenfilenames(title="Choose images!")
+        args.path = filedialog.askdirectory(title="Choose image directory!") + "/"
+    # else:
+    imgs, imgdir, dims, rotation, standardized = cli_config(args)
     
     # create grid
     combine_images(50, imgs, imgdir, dims, rotation, standardized)
