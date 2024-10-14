@@ -1,12 +1,12 @@
-from PIL import Image
-from os import listdir
-from os.path import isfile, isdir, join
 import sys
-import argparse
-import math
+from os import listdir, mkdir
+from os.path import isfile, isdir, join
 import re
+import math
 import tkinter as tk
 from tkinter import filedialog
+import argparse
+from PIL import Image
 
 def calculate_grid(imgs: list) -> list[int]:
     total = len(imgs)
@@ -24,6 +24,8 @@ def calculate_canvas(tile, grid_dims):
 def combine_images(padding, images, basedir, grid_dims=None, rotation=180, standardized=True):
     if not grid_dims: # calculate dims if not provided
         rows, cols = calculate_grid(images)
+    else:
+        rows, cols = grid_dims
     if not standardized: # calculate max dims
         width_max = max([Image.open(basedir + image).width for image in images])
         height_max = max([Image.open(basedir + image).height for image in images])
@@ -48,25 +50,34 @@ def combine_images(padding, images, basedir, grid_dims=None, rotation=180, stand
         if (i+1) % cols == 0:
             y += height_max + padding
             x = 0
-    canvas.save(basedir + 'image_grid.png')
+    canvas.save(basedir + 'out/image_grid.png')
 
-def cli_config(args):
-    # config
-    if isdir(args.path):
-        imgdir = args.path
+def get_imgs(path):
+    if isdir(path):
+        imgdir = path
     else: 
-        raise RuntimeError(f'{args.path} is not a valid directory!')
+        raise RuntimeError(f'{path} is not a valid directory!')
     
     sort_key = lambda f: int(re.search("(?:_|-)([0-9]+).tif", f).group(1)) # key for sorting images into order - modify as necessary
     try:
         imgs = sorted([ f for f in listdir(imgdir) if isfile(join(imgdir, f)) ], key=sort_key)
+        if not isdir(imgdir + "out/"):
+            mkdir(imgdir + "out/")
     except AttributeError as e:
         if "no attribute \'group\'" in str(e):
             raise ValueError(
                 ("Please ensure the target directory contains only tifs and that "
                  "filenames end in a number following an underscore or hyphen (i.e. KA331_1.tif)"))
         else: raise
-    return imgs, imgdir, args.dimensions, args.rotation, not args.ns
+    return imgs
+
+def cli_config(args):
+    # config
+    imgs = get_imgs(args.path)
+    rows, cols = args.dimensions
+    if rows * cols < len(imgs):
+        raise ValueError("given grid size too small!")
+    return imgs, args.path, args.dimensions, args.rotation, not args.ns
 
 def main():
     # parse args
@@ -78,7 +89,8 @@ def main():
     parser.add_argument("-ns", action="store_true")
     args = parser.parse_args()
     print(args)
-
+    
+    # use GUI mode or proceed from CLI args
     if args.graphical:
         tk.Tk().withdraw()
         imgdir = filedialog.askopenfilenames(title="Choose images!")
